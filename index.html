@@ -23,7 +23,6 @@
         position: relative;
       }
 
-      /* Heading */
       h1 {
         color: #6cc9ff;
         font-size: 28px;
@@ -48,46 +47,51 @@
         z-index: 1;
       }
 
-      /* Logo inside the clock */
+      /* logo (emblem) inside clock */
       .logo {
         position: absolute;
-        width: 300px;
-        opacity: 0.85;
+        width: calc(var(--clock-size) * 0.75);
+        height: auto;
+        opacity: 0.95;
         z-index: 0;
+        pointer-events: none;
       }
 
-      /* Hands */
+      /* simple hour and second hands */
       .hand {
         position: absolute;
         left: 50%;
-        bottom: 50%;
-        transform: translateX(-50%) rotate(0deg);
-        transform-origin: bottom center;
-        background: #6cc9ff;
-        border-radius: 5px;
-        z-index: 2;
+        top: 50%;
+        transform-origin: 50% 100%;
+        z-index: 4;
+        pointer-events: none;
       }
       .hour {
         width: 8px;
         height: calc(var(--clock-size) * 0.22);
+        background: #6cc9ff;
+        border-radius: 5px;
+        transform: translate(-50%, -100%) rotate(0deg);
       }
       .second {
         width: 2px;
         height: calc(var(--clock-size) * 0.38);
         background: #ff4747;
+        border-radius: 2px;
+        transform: translate(-50%, -100%) rotate(0deg);
       }
 
-      /* Replace rectangle minute with Super Tucano plane */
+      /* airplane minute hand - positioned by JS for perfect tail-center pivot */
       .minute-hand {
         position: absolute;
-        left: 50%;
-        bottom: 50%;
-        width: 160px; /* adjust for your image */
+        top: 0;
+        left: 0;
         height: auto;
-        transform: translateX(-50%) rotate(0deg);
-        transform-origin: 20% center; /* pivot from tail of plane */
-        z-index: 2;
-        filter: drop-shadow(0 0 6px #6cc9ff);
+        z-index: 3;
+        pointer-events: none;
+        user-select: none;
+        display: block;
+        /* width will be set by JS for responsiveness */
       }
 
       .center-dot {
@@ -96,10 +100,12 @@
         background: #6cc9ff;
         border-radius: 50%;
         position: absolute;
-        z-index: 3;
+        z-index: 5;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
       }
 
-      /* Numbers */
       .number {
         position: absolute;
         font-size: 22px;
@@ -108,10 +114,9 @@
         transform: translate(-50%, -50%);
         user-select: none;
         pointer-events: none;
-        z-index: 1;
+        z-index: 2;
       }
 
-      /* Digital clock */
       .digital {
         margin-top: 22px;
         text-align: center;
@@ -124,18 +129,17 @@
     </style>
   </head>
   <body>
-    <!-- Heading -->
     <h1>Time Hack - Nigerian Air Force</h1>
 
     <div class="clock" id="clock">
-      <!-- Nigerian Air Force logo inside -->
+      <!-- NAF emblem -->
       <img
         src="Nigerian-Air-Force-NAF-removebg-preview.png"
         class="logo"
         alt="NAF Logo"
       />
 
-      <!-- Hands -->
+      <!-- hour & second hands (rectangles) -->
       <div class="hand hour" id="hour"></div>
       <img
         src="supatucano.png"
@@ -154,29 +158,71 @@
     </div>
 
     <script>
+      // Tweak these if the plane orientation/pivot needs adjustment:
+      // tailFraction = distance from left of the image to the tail, as fraction of image width (0..1).
+      // angleOffset = rotate offset so that minute=0 points to 12 o'clock (degrees).
+      const tailFraction = 0.18; // adjust if tail is not exactly at this part of your PNG
+      const angleOffset = -90; // common when plane image points to the right; change if necessary
+
       function layoutNumbers() {
         const clock = document.getElementById("clock");
         clock.querySelectorAll(".number").forEach((n) => n.remove());
-
-        const w = clock.clientWidth;
-        const h = clock.clientHeight;
-        const cx = w / 2;
-        const cy = h / 2;
+        const w = clock.clientWidth,
+          h = clock.clientHeight;
+        const cx = w / 2,
+          cy = h / 2;
         const padding = 28;
         const r = Math.min(w, h) / 2 - padding;
-
         for (let n = 1; n <= 12; n++) {
           const theta = (n / 12) * 2 * Math.PI - Math.PI / 2;
           const x = cx + r * Math.cos(theta);
           const y = cy + r * Math.sin(theta);
-
           const el = document.createElement("div");
           el.className = "number";
           el.textContent = n;
-          el.style.left = `${x}px`;
-          el.style.top = `${y}px`;
+          el.style.left = x + "px";
+          el.style.top = y + "px";
           clock.appendChild(el);
         }
+
+        layoutMinuteHand(); // position and size plane properly whenever layout changes
+      }
+
+      function layoutMinuteHand() {
+        const clock = document.getElementById("clock");
+        const minute = document.getElementById("minute");
+        if (!minute) return;
+
+        // responsive width relative to clock
+        const desiredWidth = Math.round(clock.clientWidth * 0.62);
+        minute.style.width = desiredWidth + "px";
+
+        // if image not loaded yet, wait and run again onload
+        if (!minute.complete) {
+          minute.onload = () => {
+            layoutMinuteHand();
+          };
+          return;
+        }
+
+        const imgW = minute.clientWidth || desiredWidth;
+        const imgH = minute.clientHeight || desiredWidth * 0.3;
+
+        const cx = clock.clientWidth / 2;
+        const cy = clock.clientHeight / 2;
+
+        // place the image so that the tailFraction point of the image aligns with the clock center
+        const left = Math.round(cx - imgW * tailFraction);
+        const top = Math.round(cy); // we'll use translateY(-50%) so align to center vertically
+
+        minute.style.left = left + "px";
+        minute.style.top = top + "px";
+
+        // set transform origin relative to image (tail point)
+        minute.style.transformOrigin = `${tailFraction * 100}% 50%`;
+
+        // center vertically then rotation will be applied in updateClock
+        minute.style.transform = `translateY(-50%) rotate(0deg)`;
       }
 
       function updateClock() {
@@ -190,11 +236,15 @@
         const hDeg = (h % 12) * 30 + m * 0.5;
 
         document.getElementById("second").style.transform =
-          `translateX(-50%) rotate(${sDeg}deg)`;
-        document.getElementById("minute").style.transform =
-          `translateX(-50%) rotate(${mDeg}deg)`;
+          `translate(-50%,-100%) rotate(${sDeg}deg)`;
         document.getElementById("hour").style.transform =
-          `translateX(-50%) rotate(${hDeg}deg)`;
+          `translate(-50%,-100%) rotate(${hDeg}deg)`;
+
+        // rotate minute plane around its tail (pivot set in layoutMinuteHand)
+        const minuteEl = document.getElementById("minute");
+        if (minuteEl) {
+          minuteEl.style.transform = `translateY(-50%) rotate(${mDeg + angleOffset}deg)`;
+        }
 
         const days = [
           "SUNDAY",
@@ -212,6 +262,7 @@
           now.toLocaleTimeString("en-GB");
       }
 
+      // initial layout + ticking
       layoutNumbers();
       updateClock();
       setInterval(updateClock, 1000);
