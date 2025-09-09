@@ -23,6 +23,7 @@
         position: relative;
       }
 
+      /* Heading */
       h1 {
         color: #6cc9ff;
         font-size: 28px;
@@ -50,8 +51,8 @@
       /* Logo inside the clock */
       .logo {
         position: absolute;
-        width: 300px; /* adjust size */
-        opacity: 0.85; /* slightly transparent */
+        width: 120px;
+        opacity: 0.85;
         z-index: 0;
       }
 
@@ -64,20 +65,29 @@
         transform-origin: bottom center;
         background: #6cc9ff;
         border-radius: 5px;
-        z-index: 2; /* above logo */
+        z-index: 2;
       }
       .hour {
         width: 8px;
         height: calc(var(--clock-size) * 0.22);
       }
-      .minute {
-        width: 5px;
-        height: calc(var(--clock-size) * 0.32);
-      }
       .second {
         width: 2px;
         height: calc(var(--clock-size) * 0.38);
         background: #ff4747;
+      }
+
+      /* Replace rectangle minute with Super Tucano plane */
+      .minute-hand {
+        position: absolute;
+        left: 50%;
+        bottom: 50%;
+        width: 160px; /* adjust for your image */
+        height: auto;
+        transform: translateX(-50%) rotate(0deg);
+        transform-origin: 20% center; /* pivot from tail of plane */
+        z-index: 2;
+        filter: drop-shadow(0 0 6px #6cc9ff);
       }
 
       .center-dot {
@@ -114,7 +124,9 @@
     </style>
   </head>
   <body>
+    <!-- Heading -->
     <h1>Time Hack - Nigerian Air Force</h1>
+
     <div class="clock" id="clock">
       <!-- Nigerian Air Force logo inside -->
       <img
@@ -123,9 +135,14 @@
         alt="NAF Logo"
       />
 
-      <!-- Numbers will be injected by JS -->
+      <!-- Hands -->
       <div class="hand hour" id="hour"></div>
-      <div class="hand minute" id="minute"></div>
+      <img
+        src="supatucano.png"
+        class="minute-hand"
+        id="minute"
+        alt="Super Tucano Minute Hand"
+      />
       <div class="hand second" id="second"></div>
       <div class="center-dot"></div>
     </div>
